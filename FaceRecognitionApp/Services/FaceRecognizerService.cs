@@ -10,9 +10,11 @@ public sealed class FaceRecognizerService : IDisposable
 {
     /// <summary>
     /// Varsayılan eşik. LBPH mesafesi bunun üstündeyse yüz "Bilinmiyor" sayılır.
-    /// Gerçek dataset üzerinde leave-one-out değerlendirmesiyle seçildi (yabancılar en az 58,5 mesafede çıktı).
+    /// Gerçek dataset üzerindeki leave-one-out değerlendirmesinde iki kişi arasındaki çapraz mesafeler en az 74,9 çıktı;
+    /// fotoğraflardaki doğru eşleşmeler ise 66-68 civarında. 70 iki kişiyi karıştırmadan bunları kabul eder.
+    /// Modelde olmayan yabancılar 58-74 aralığında çıkabildiği için bazıları yanlışlıkla tanınabilir (README).
     /// </summary>
-    public const double DefaultThreshold = 58;
+    public const double DefaultThreshold = 70;
 
     /// <summary>Bir etiketin eğitime alınması için gereken en az örnek sayısı.</summary>
     public const int MinSamplesPerLabel = 5;
