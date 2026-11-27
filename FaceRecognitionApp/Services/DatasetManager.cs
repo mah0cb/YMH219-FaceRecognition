@@ -45,7 +45,10 @@ public sealed class DatasetManager
         WritePng(crop, Path.Combine(directory, NewFileName()));
     }
 
-    /// <summary>Seçilen fotoğraflardaki yüzleri kırpıp etikete ekler. Eklenen yüz sayısını ve sorunlu dosyaları döndürür.</summary>
+    /// <summary>
+    /// Seçilen her fotoğraftaki ana yüzü (gözü görünen en büyük yüz) kırpıp etikete ekler; arka plandaki kişiler ve yanlış algılamalar eklenmez.
+    /// Eklenen yüz sayısını ve sorunlu dosyaları döndürür.
+    /// </summary>
     public (int FacesAdded, List<string> Problems) AddFromFiles(IEnumerable<string> paths, string label, FaceDetector detector)
     {
         label = NormalizeLabel(label);
@@ -59,13 +62,14 @@ public sealed class DatasetManager
                 using var image = ImageLoader.Load(path);
                 using var gray = FaceDetector.ToGray(image);
                 var faces = detector.Detect(gray);
-                if (faces.Length == 0) problems.Add($"{name}: yüz bulunamadı");
-                if (faces.Length > 1) problems.Add($"{name}: {faces.Length} yüz bulundu, hepsi eklendi");
-                foreach (var face in faces)
+                if (faces.Length == 0)
                 {
-                    SaveSample(label, gray, face);
-                    added++;
+                    problems.Add($"{name}: yüz bulunamadı");
+                    continue;
                 }
+                if (faces.Length > 1) problems.Add($"{name}: {faces.Length} yüz bulundu, sadece ana yüz eklendi");
+                SaveSample(label, gray, detector.SelectMainFace(gray, faces));
+                added++;
             }
             catch (Exception ex)
             {

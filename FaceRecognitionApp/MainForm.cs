@@ -40,7 +40,7 @@ public partial class MainForm : Form
         _camera.Error += Camera_Error;
         try
         {
-            _detector = new FaceDetector(FaceDetector.DefaultCascadePath);
+            _detector = new FaceDetector(FaceDetector.DefaultModelsDirectory);
         }
         catch (Exception ex)
         {
