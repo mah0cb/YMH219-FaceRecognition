@@ -8,6 +8,7 @@ namespace FaceRecognitionApp;
 public partial class MainForm : Form
 {
     private readonly CameraService _camera = new();
+    private FaceDetector? _detector;
 
     public MainForm()
     {
@@ -18,12 +19,22 @@ public partial class MainForm : Form
     {
         cmbKamera.SelectedIndex = 0;
         _camera.FrameReady += Camera_FrameReady;
+        try
+        {
+            _detector = new FaceDetector(FaceDetector.DefaultCascadePath);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message + "\n\nYüz algılama ve tanıma devre dışı; sadece görüntü gösterilecek.",
+                "Model Dosyası Bulunamadı", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
         UpdateButtons();
     }
 
     private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
     {
         _camera.Dispose();
+        _detector?.Dispose();
     }
 
     private async void btnKameraBaslat_Click(object sender, EventArgs e)
@@ -62,8 +73,9 @@ public partial class MainForm : Form
             _camera.Stop();
             UpdateButtons();
             using var image = ImageLoader.Load(ofdGoruntu.FileName);
-            ShowImage(image.ToBitmap());
-            SetStatus("Görüntü yüklendi: " + Path.GetFileName(ofdGoruntu.FileName));
+            var (bitmap, faces) = ProcessFrame(image);
+            ShowImage(bitmap);
+            SetStatus($"{Path.GetFileName(ofdGoruntu.FileName)}: {faces.Length} yüz bulundu.");
         }
         catch (Exception ex)
         {
@@ -72,13 +84,32 @@ public partial class MainForm : Form
         }
     }
 
-    /// <summary>Kamera iş parçacığında çalışır; kareyi Bitmap'e çevirip arayüze gönderir.</summary>
+    /// <summary>Kamera iş parçacığında çalışır; kareyi işleyip arayüze gönderir.</summary>
     private void Camera_FrameReady(object? sender, Mat frame)
     {
         using (frame)
         {
-            ShowImage(frame.ToBitmap());
+            try
+            {
+                ShowImage(ProcessFrame(frame).Image);
+            }
+            catch (Exception ex)
+            {
+                BeginInvoke(() => SetStatus("Kare işlenemedi: " + ex.Message));
+            }
         }
+    }
+
+    /// <summary>Karedeki yüzleri bulur ve dikdörtgenle işaretlenmiş Bitmap döndürür.</summary>
+    private (Bitmap Image, OpenCvSharp.Rect[] Faces) ProcessFrame(Mat bgr)
+    {
+        var bitmap = bgr.ToBitmap();
+        if (_detector == null) return (bitmap, []);
+
+        using var gray = FaceDetector.ToGray(bgr);
+        var faces = _detector.Detect(gray);
+        FaceOverlay.Draw(bitmap, faces.Select(face => (face, "Yüz", Color.Lime)));
+        return (bitmap, faces);
     }
 
     /// <summary>PictureBox'taki resmi değiştirir ve eski Bitmap'i Dispose eder. Her iş parçacığından çağrılabilir.</summary>

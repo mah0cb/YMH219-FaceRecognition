@@ -13,4 +13,10 @@
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20261107" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Models\haarcascade_frontalface_default.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
