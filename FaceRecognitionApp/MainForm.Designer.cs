@@ -45,12 +45,20 @@ partial class MainForm
         btnDosyalardanEkle = new Button();
         lblOrnekSayisi = new Label();
         ofdOrnekler = new OpenFileDialog();
+        grpTanima = new GroupBox();
+        btnModeliEgit = new Button();
+        lblEsik = new Label();
+        nudEsik = new NumericUpDown();
+        lblEsikAciklama = new Label();
+        lblSonuc = new Label();
         ssDurum = new StatusStrip();
         lblDurum = new ToolStripStatusLabel();
         ((System.ComponentModel.ISupportInitialize)picGoruntu).BeginInit();
         pnlKontroller.SuspendLayout();
         grpKamera.SuspendLayout();
         grpVeriEkle.SuspendLayout();
+        grpTanima.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)nudEsik).BeginInit();
         ssDurum.SuspendLayout();
         SuspendLayout();
         //
@@ -70,6 +78,7 @@ partial class MainForm
         pnlKontroller.AutoScroll = true;
         pnlKontroller.Controls.Add(grpKamera);
         pnlKontroller.Controls.Add(grpVeriEkle);
+        pnlKontroller.Controls.Add(grpTanima);
         pnlKontroller.Dock = DockStyle.Right;
         pnlKontroller.Location = new Point(884, 0);
         pnlKontroller.Name = "pnlKontroller";
@@ -222,6 +231,70 @@ partial class MainForm
         ofdOrnekler.Filter = "Resim dosyaları|*.jpg;*.jpeg;*.png;*.bmp|Tüm dosyalar|*.*";
         ofdOrnekler.Multiselect = true;
         ofdOrnekler.Title = "Etikete Eklenecek Fotoğrafları Seç";
+        // 
+        // grpTanima
+        // 
+        grpTanima.Controls.Add(btnModeliEgit);
+        grpTanima.Controls.Add(lblEsik);
+        grpTanima.Controls.Add(nudEsik);
+        grpTanima.Controls.Add(lblEsikAciklama);
+        grpTanima.Controls.Add(lblSonuc);
+        grpTanima.Location = new Point(8, 356);
+        grpTanima.Name = "grpTanima";
+        grpTanima.Size = new Size(282, 310);
+        grpTanima.TabIndex = 2;
+        grpTanima.TabStop = false;
+        grpTanima.Text = "Tanıma";
+        // 
+        // btnModeliEgit
+        // 
+        btnModeliEgit.Location = new Point(12, 26);
+        btnModeliEgit.Name = "btnModeliEgit";
+        btnModeliEgit.Size = new Size(258, 32);
+        btnModeliEgit.TabIndex = 0;
+        btnModeliEgit.Text = "Modeli Eğit";
+        btnModeliEgit.UseVisualStyleBackColor = true;
+        btnModeliEgit.Click += btnModeliEgit_Click;
+        // 
+        // lblEsik
+        // 
+        lblEsik.AutoSize = true;
+        lblEsik.Location = new Point(12, 72);
+        lblEsik.Name = "lblEsik";
+        lblEsik.Size = new Size(85, 15);
+        lblEsik.TabIndex = 1;
+        lblEsik.Text = "Eşik (mesafe):";
+        // 
+        // nudEsik
+        // 
+        nudEsik.Location = new Point(120, 68);
+        nudEsik.Maximum = new decimal(new int[] { 300, 0, 0, 0 });
+        nudEsik.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+        nudEsik.Name = "nudEsik";
+        nudEsik.Size = new Size(150, 23);
+        nudEsik.TabIndex = 2;
+        nudEsik.Value = new decimal(new int[] { 80, 0, 0, 0 });
+        nudEsik.ValueChanged += nudEsik_ValueChanged;
+        // 
+        // lblEsikAciklama
+        // 
+        lblEsikAciklama.ForeColor = SystemColors.GrayText;
+        lblEsikAciklama.Location = new Point(12, 98);
+        lblEsikAciklama.Name = "lblEsikAciklama";
+        lblEsikAciklama.Size = new Size(258, 64);
+        lblEsikAciklama.TabIndex = 3;
+        lblEsikAciklama.Text = "LBPH güven skoru bir mesafedir: düşük değer daha iyi eşleşme demektir. Skor eşiğin üstündeyse yüz \"Bilinmiyor\" sayılır.";
+        // 
+        // lblSonuc
+        // 
+        lblSonuc.BorderStyle = BorderStyle.FixedSingle;
+        lblSonuc.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        lblSonuc.Location = new Point(12, 168);
+        lblSonuc.Name = "lblSonuc";
+        lblSonuc.Padding = new Padding(4);
+        lblSonuc.Size = new Size(258, 130);
+        lblSonuc.TabIndex = 4;
+        lblSonuc.Text = "Tahmin: -";
         //
         // ssDurum
         //
@@ -245,7 +318,7 @@ partial class MainForm
         Controls.Add(picGoruntu);
         Controls.Add(pnlKontroller);
         Controls.Add(ssDurum);
-        MinimumSize = new Size(900, 600);
+        MinimumSize = new Size(900, 740);
         Name = "MainForm";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Yüz Tanıma";
@@ -257,6 +330,9 @@ partial class MainForm
         grpKamera.PerformLayout();
         grpVeriEkle.ResumeLayout(false);
         grpVeriEkle.PerformLayout();
+        grpTanima.ResumeLayout(false);
+        grpTanima.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)nudEsik).EndInit();
         ssDurum.ResumeLayout(false);
         ssDurum.PerformLayout();
         ResumeLayout(false);
@@ -282,6 +358,12 @@ partial class MainForm
     private Button btnDosyalardanEkle;
     private Label lblOrnekSayisi;
     private OpenFileDialog ofdOrnekler;
+    private GroupBox grpTanima;
+    private Button btnModeliEgit;
+    private Label lblEsik;
+    private NumericUpDown nudEsik;
+    private Label lblEsikAciklama;
+    private Label lblSonuc;
     private StatusStrip ssDurum;
     private ToolStripStatusLabel lblDurum;
 }

@@ -1,3 +1,4 @@
+using FaceRecognitionApp.Models;
 using FaceRecognitionApp.Services;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
@@ -15,6 +16,7 @@ public partial class MainForm : Form
 
     private readonly CameraService _camera = new();
     private readonly DatasetManager _dataset = new(AppContext.BaseDirectory);
+    private readonly FaceRecognizerService _recognizer;
     private FaceDetector? _detector;
 
     private readonly object _imageLock = new();
@@ -27,6 +29,7 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
+        _recognizer = new FaceRecognizerService(AppContext.BaseDirectory, _dataset.DatasetDirectory);
     }
 
     private void MainForm_Load(object sender, EventArgs e)
@@ -42,6 +45,7 @@ public partial class MainForm : Form
             MessageBox.Show(ex.Message + "\n\nYüz algılama ve tanıma devre dışı; sadece görüntü gösterilecek.",
                 "Model Dosyası Bulunamadı", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+        LoadRecognitionModel();
         UpdateButtons();
     }
 
@@ -49,6 +53,7 @@ public partial class MainForm : Form
     {
         _camera.Dispose();
         _detector?.Dispose();
+        _recognizer.Dispose();
         SetCurrentImage(null);
     }
 
@@ -86,10 +91,10 @@ public partial class MainForm : Form
         {
             StopCamera();
             var image = ImageLoader.Load(ofdGoruntu.FileName);
-            var (bitmap, faces) = ProcessFrame(image);
+            var (bitmap, results) = ProcessFrame(image);
             SetCurrentImage(image);
-            ShowImage(bitmap);
-            SetStatus($"{Path.GetFileName(ofdGoruntu.FileName)}: {faces.Length} yüz bulundu.");
+            ShowFrame(bitmap, results);
+            SetStatus($"{Path.GetFileName(ofdGoruntu.FileName)}: {results.Count} yüz bulundu.");
         }
         catch (Exception ex)
         {
@@ -172,15 +177,70 @@ public partial class MainForm : Form
         UpdateButtons();
     }
 
+    private async void btnModeliEgit_Click(object sender, EventArgs e)
+    {
+        btnModeliEgit.Enabled = false;
+        SetStatus("Model eğitiliyor...");
+        try
+        {
+            var (samples, labels) = await Task.Run(_recognizer.Train);
+            SetStatus($"Model eğitildi: {labels} etiket, {samples} örnek ({string.Join(", ", _recognizer.Labels)}).");
+            RefreshStillImage();
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Model eğitilemedi.");
+            MessageBox.Show("Model eğitilemedi.\n" + ex.Message, "Eğitim Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        btnModeliEgit.Enabled = true;
+    }
+
+    private void nudEsik_ValueChanged(object sender, EventArgs e)
+    {
+        _recognizer.Threshold = (double)nudEsik.Value;
+        RefreshStillImage();
+    }
+
+    /// <summary>Program açılışında kayıtlı modeli yükler.</summary>
+    private void LoadRecognitionModel()
+    {
+        try
+        {
+            SetStatus(_recognizer.TryLoad()
+                ? $"Model yüklendi: {string.Join(", ", _recognizer.Labels)}."
+                : "Eğitilmiş model yok. Veri ekleyip 'Modeli Eğit' düğmesine basın.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Model yüklenemedi.");
+            MessageBox.Show("Kayıtlı model (model.yml / labels.json) okunamadı. Modeli yeniden eğitin.\n" + ex.Message,
+                "Model Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    /// <summary>Kamera kapalıyken ekrandaki resmi yeni model/eşikle yeniden işler.</summary>
+    private void RefreshStillImage()
+    {
+        if (_camera.IsRunning) return;
+        Mat? snapshot;
+        lock (_imageLock) snapshot = _currentImage?.Clone();
+        if (snapshot == null) return;
+        using (snapshot)
+        {
+            var (bitmap, results) = ProcessFrame(snapshot);
+            ShowFrame(bitmap, results);
+        }
+    }
+
     /// <summary>Kamera iş parçacığında çalışır; kareyi işleyip arayüze gönderir.</summary>
     private void Camera_FrameReady(object? sender, Mat frame)
     {
         try
         {
-            var (bitmap, faces) = ProcessFrame(frame);
-            TryTakeSample(frame, faces);
+            var (bitmap, results) = ProcessFrame(frame);
+            TryTakeSample(frame, results);
             SetCurrentImage(frame);
-            ShowImage(bitmap);
+            ShowFrame(bitmap, results);
         }
         catch (Exception ex)
         {
@@ -189,30 +249,31 @@ public partial class MainForm : Form
         }
     }
 
-    /// <summary>Karedeki yüzleri bulur ve dikdörtgenle işaretlenmiş Bitmap döndürür.</summary>
-    private (Bitmap Image, OpenCvSharp.Rect[] Faces) ProcessFrame(Mat bgr)
+    /// <summary>Karedeki yüzleri bulup tanır; her yüzü dikdörtgen ve etiketle işaretlenmiş Bitmap döndürür.</summary>
+    private (Bitmap Image, List<RecognitionResult> Results) ProcessFrame(Mat bgr)
     {
         var bitmap = bgr.ToBitmap();
         if (_detector == null) return (bitmap, []);
 
         using var gray = FaceDetector.ToGray(bgr);
-        var faces = _detector.Detect(gray);
-        FaceOverlay.Draw(bitmap, faces.Select(face => (face, "Yüz", Color.Lime)));
-        return (bitmap, faces);
+        var results = _recognizer.RecognizeAll(gray, _detector.Detect(gray));
+        FaceOverlay.Draw(bitmap, results.Select(r => (r.Face, r.DisplayText,
+            !r.HasPrediction ? Color.Yellow : r.IsKnown ? Color.Lime : Color.OrangeRed)));
+        return (bitmap, results);
     }
 
     /// <summary>Örnek alma sürerken karede tek yüz varsa belirli aralıklarla bir örnek kaydeder.</summary>
-    private void TryTakeSample(Mat frame, OpenCvSharp.Rect[] faces)
+    private void TryTakeSample(Mat frame, List<RecognitionResult> faces)
     {
         if (_samplesLeft <= 0 || Environment.TickCount64 - _lastSampleTime < SampleIntervalMs) return;
-        if (faces.Length != 1)
+        if (faces.Count != 1)
         {
             BeginInvoke(() => SetStatus("Örnek almak için kadrajda tek bir yüz olmalı."));
             return;
         }
 
         using (var gray = FaceDetector.ToGray(frame))
-            _dataset.SaveSample(_sampleLabel, gray, faces[0]);
+            _dataset.SaveSample(_sampleLabel, gray, faces[0].Face);
         _lastSampleTime = Environment.TickCount64;
         int left = --_samplesLeft;
 
@@ -266,12 +327,12 @@ public partial class MainForm : Form
         }
     }
 
-    /// <summary>PictureBox'taki resmi değiştirir ve eski Bitmap'i Dispose eder. Her iş parçacığından çağrılabilir.</summary>
-    private void ShowImage(Bitmap bitmap)
+    /// <summary>Resmi ve tanıma sonuçlarını gösterir, eski Bitmap'i Dispose eder. Her iş parçacığından çağrılabilir.</summary>
+    private void ShowFrame(Bitmap bitmap, List<RecognitionResult> results)
     {
         if (InvokeRequired)
         {
-            try { BeginInvoke(() => ShowImage(bitmap)); }
+            try { BeginInvoke(() => ShowFrame(bitmap, results)); }
             catch (InvalidOperationException) { bitmap.Dispose(); } // Form kapanıyor.
             return;
         }
@@ -283,6 +344,10 @@ public partial class MainForm : Form
         var old = picGoruntu.Image;
         picGoruntu.Image = bitmap;
         old?.Dispose();
+
+        lblSonuc.Text = results.Count == 0
+            ? "Tahmin: yüz bulunamadı"
+            : string.Join("\n", results.Select((r, i) => $"{i + 1}. {r.Summary}"));
     }
 
     private void StopCamera()
