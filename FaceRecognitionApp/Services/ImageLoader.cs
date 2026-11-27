@@ -11,6 +11,9 @@ public static class ImageLoader
     /// <summary>Resmi BGR Mat olarak yükler. Okunamazsa InvalidDataException fırlatır.</summary>
     public static Mat Load(string path)
     {
+        if (!File.Exists(path))
+            throw new FileNotFoundException($"'{Path.GetFileName(path)}' dosyası bulunamadı.", path);
+
         var image = Cv2.ImDecode(File.ReadAllBytes(path), ImreadModes.Color);
         if (image.Empty())
         {

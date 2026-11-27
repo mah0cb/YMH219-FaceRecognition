@@ -37,11 +37,20 @@ partial class MainForm
         btnKameraDurdur = new Button();
         btnGoruntuSec = new Button();
         ofdGoruntu = new OpenFileDialog();
+        btnYuzleriKaydet = new Button();
+        grpVeriEkle = new GroupBox();
+        lblEtiket = new Label();
+        txtEtiket = new TextBox();
+        btnKameradanOrnekAl = new Button();
+        btnDosyalardanEkle = new Button();
+        lblOrnekSayisi = new Label();
+        ofdOrnekler = new OpenFileDialog();
         ssDurum = new StatusStrip();
         lblDurum = new ToolStripStatusLabel();
         ((System.ComponentModel.ISupportInitialize)picGoruntu).BeginInit();
         pnlKontroller.SuspendLayout();
         grpKamera.SuspendLayout();
+        grpVeriEkle.SuspendLayout();
         ssDurum.SuspendLayout();
         SuspendLayout();
         //
@@ -60,6 +69,7 @@ partial class MainForm
         //
         pnlKontroller.AutoScroll = true;
         pnlKontroller.Controls.Add(grpKamera);
+        pnlKontroller.Controls.Add(grpVeriEkle);
         pnlKontroller.Dock = DockStyle.Right;
         pnlKontroller.Location = new Point(884, 0);
         pnlKontroller.Name = "pnlKontroller";
@@ -74,9 +84,10 @@ partial class MainForm
         grpKamera.Controls.Add(btnKameraBaslat);
         grpKamera.Controls.Add(btnKameraDurdur);
         grpKamera.Controls.Add(btnGoruntuSec);
+        grpKamera.Controls.Add(btnYuzleriKaydet);
         grpKamera.Location = new Point(8, 8);
         grpKamera.Name = "grpKamera";
-        grpKamera.Size = new Size(282, 136);
+        grpKamera.Size = new Size(282, 172);
         grpKamera.TabIndex = 0;
         grpKamera.TabStop = false;
         grpKamera.Text = "Kamera / Görüntü";
@@ -134,6 +145,83 @@ partial class MainForm
         //
         ofdGoruntu.Filter = "Resim dosyaları|*.jpg;*.jpeg;*.png;*.bmp|Tüm dosyalar|*.*";
         ofdGoruntu.Title = "Görüntü Seç";
+        // 
+        // btnYuzleriKaydet
+        // 
+        btnYuzleriKaydet.Location = new Point(12, 132);
+        btnYuzleriKaydet.Name = "btnYuzleriKaydet";
+        btnYuzleriKaydet.Size = new Size(258, 28);
+        btnYuzleriKaydet.TabIndex = 5;
+        btnYuzleriKaydet.Text = "Algılanan Yüzleri Kaydet";
+        btnYuzleriKaydet.UseVisualStyleBackColor = true;
+        btnYuzleriKaydet.Click += btnYuzleriKaydet_Click;
+        // 
+        // grpVeriEkle
+        // 
+        grpVeriEkle.Controls.Add(lblEtiket);
+        grpVeriEkle.Controls.Add(txtEtiket);
+        grpVeriEkle.Controls.Add(btnKameradanOrnekAl);
+        grpVeriEkle.Controls.Add(btnDosyalardanEkle);
+        grpVeriEkle.Controls.Add(lblOrnekSayisi);
+        grpVeriEkle.Location = new Point(8, 188);
+        grpVeriEkle.Name = "grpVeriEkle";
+        grpVeriEkle.Size = new Size(282, 160);
+        grpVeriEkle.TabIndex = 1;
+        grpVeriEkle.TabStop = false;
+        grpVeriEkle.Text = "Veri Ekle";
+        // 
+        // lblEtiket
+        // 
+        lblEtiket.AutoSize = true;
+        lblEtiket.Location = new Point(12, 30);
+        lblEtiket.Name = "lblEtiket";
+        lblEtiket.Size = new Size(63, 15);
+        lblEtiket.TabIndex = 0;
+        lblEtiket.Text = "Etiket adı:";
+        // 
+        // txtEtiket
+        // 
+        txtEtiket.Location = new Point(90, 26);
+        txtEtiket.Name = "txtEtiket";
+        txtEtiket.PlaceholderText = "örn. Mahmut";
+        txtEtiket.Size = new Size(180, 23);
+        txtEtiket.TabIndex = 1;
+        txtEtiket.TextChanged += txtEtiket_TextChanged;
+        // 
+        // btnKameradanOrnekAl
+        // 
+        btnKameradanOrnekAl.Location = new Point(12, 58);
+        btnKameradanOrnekAl.Name = "btnKameradanOrnekAl";
+        btnKameradanOrnekAl.Size = new Size(258, 30);
+        btnKameradanOrnekAl.TabIndex = 2;
+        btnKameradanOrnekAl.Text = "Kameradan Örnek Al (20)";
+        btnKameradanOrnekAl.UseVisualStyleBackColor = true;
+        btnKameradanOrnekAl.Click += btnKameradanOrnekAl_Click;
+        // 
+        // btnDosyalardanEkle
+        // 
+        btnDosyalardanEkle.Location = new Point(12, 94);
+        btnDosyalardanEkle.Name = "btnDosyalardanEkle";
+        btnDosyalardanEkle.Size = new Size(258, 30);
+        btnDosyalardanEkle.TabIndex = 3;
+        btnDosyalardanEkle.Text = "Dosyalardan Ekle...";
+        btnDosyalardanEkle.UseVisualStyleBackColor = true;
+        btnDosyalardanEkle.Click += btnDosyalardanEkle_Click;
+        // 
+        // lblOrnekSayisi
+        // 
+        lblOrnekSayisi.AutoSize = true;
+        lblOrnekSayisi.Location = new Point(12, 132);
+        lblOrnekSayisi.Name = "lblOrnekSayisi";
+        lblOrnekSayisi.Size = new Size(107, 15);
+        lblOrnekSayisi.TabIndex = 4;
+        lblOrnekSayisi.Text = "Etiket adı girin.";
+        // 
+        // ofdOrnekler
+        // 
+        ofdOrnekler.Filter = "Resim dosyaları|*.jpg;*.jpeg;*.png;*.bmp|Tüm dosyalar|*.*";
+        ofdOrnekler.Multiselect = true;
+        ofdOrnekler.Title = "Etikete Eklenecek Fotoğrafları Seç";
         //
         // ssDurum
         //
@@ -167,6 +255,8 @@ partial class MainForm
         pnlKontroller.ResumeLayout(false);
         grpKamera.ResumeLayout(false);
         grpKamera.PerformLayout();
+        grpVeriEkle.ResumeLayout(false);
+        grpVeriEkle.PerformLayout();
         ssDurum.ResumeLayout(false);
         ssDurum.PerformLayout();
         ResumeLayout(false);
@@ -184,6 +274,14 @@ partial class MainForm
     private Button btnKameraDurdur;
     private Button btnGoruntuSec;
     private OpenFileDialog ofdGoruntu;
+    private Button btnYuzleriKaydet;
+    private GroupBox grpVeriEkle;
+    private Label lblEtiket;
+    private TextBox txtEtiket;
+    private Button btnKameradanOrnekAl;
+    private Button btnDosyalardanEkle;
+    private Label lblOrnekSayisi;
+    private OpenFileDialog ofdOrnekler;
     private StatusStrip ssDurum;
     private ToolStripStatusLabel lblDurum;
 }
