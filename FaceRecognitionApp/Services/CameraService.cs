@@ -8,12 +8,18 @@ public sealed class CameraService : IDisposable
     /// <summary>Otomatik aramada denenecek en büyük kamera indeksi.</summary>
     public const int MaxCameraIndex = 3;
 
+    /// <summary>Üst üste bu kadar kare okunamazsa kamera kopmuş sayılır (yaklaşık 2 saniye).</summary>
+    private const int MaxReadFailures = 60;
+
     private VideoCapture? _capture;
     private CancellationTokenSource? _cts;
     private Task? _loop;
 
     /// <summary>Yeni kare geldiğinde arka plan iş parçacığında tetiklenir. Kareyi dinleyen taraf Dispose eder.</summary>
     public event EventHandler<Mat>? FrameReady;
+
+    /// <summary>Kamera koptuğunda veya okuma hatasında tetiklenir; döngü durmuş olur. Mesaj Türkçedir.</summary>
+    public event EventHandler<string>? Error;
 
     /// <summary>Kare döngüsü çalışıyor mu?</summary>
     public bool IsRunning => _loop is { IsCompleted: false };
@@ -49,7 +55,14 @@ public sealed class CameraService : IDisposable
     public void Stop()
     {
         _cts?.Cancel();
-        _loop?.Wait();
+        try
+        {
+            _loop?.Wait();
+        }
+        catch (AggregateException)
+        {
+            // Döngüdeki hata zaten Error olayıyla bildirildi.
+        }
         _capture?.Dispose();
         _cts?.Dispose();
         _capture = null;
@@ -79,18 +92,33 @@ public sealed class CameraService : IDisposable
 
     private void ReadLoop(VideoCapture capture, CancellationToken token)
     {
-        while (!token.IsCancellationRequested)
+        int failures = 0;
+        try
         {
-            var frame = new Mat();
-            if (capture.Read(frame) && !frame.Empty() && FrameReady is { } handler)
+            while (!token.IsCancellationRequested)
             {
-                handler(this, frame);
-            }
-            else
-            {
+                var frame = new Mat();
+                if (capture.Read(frame) && !frame.Empty())
+                {
+                    failures = 0;
+                    if (FrameReady is { } handler) handler(this, frame);
+                    else frame.Dispose();
+                    continue;
+                }
+
                 frame.Dispose();
+                if (++failures >= MaxReadFailures)
+                {
+                    Error?.Invoke(this, "Kameradan görüntü alınamıyor. Bağlantıyı kontrol edip kamerayı yeniden başlatın.");
+                    return;
+                }
                 Thread.Sleep(30);
             }
+        }
+        catch (Exception ex)
+        {
+            if (!token.IsCancellationRequested)
+                Error?.Invoke(this, "Kamera hatası: " + ex.Message);
         }
     }
 }

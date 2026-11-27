@@ -36,6 +36,7 @@ public partial class MainForm : Form
     {
         cmbKamera.SelectedIndex = 0;
         _camera.FrameReady += Camera_FrameReady;
+        _camera.Error += Camera_Error;
         try
         {
             _detector = new FaceDetector(FaceDetector.DefaultCascadePath);
@@ -232,6 +233,24 @@ public partial class MainForm : Form
         }
     }
 
+    /// <summary>Kamera koptuğunda kamera iş parçacığından gelir; kamerayı durdurup kullanıcıyı uyarır.</summary>
+    private void Camera_Error(object? sender, string message)
+    {
+        try
+        {
+            BeginInvoke(() =>
+            {
+                StopCamera();
+                SetStatus(message);
+                MessageBox.Show(message, "Kamera Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // Form kapanıyor.
+        }
+    }
+
     /// <summary>Kamera iş parçacığında çalışır; kareyi işleyip arayüze gönderir.</summary>
     private void Camera_FrameReady(object? sender, Mat frame)
     {
@@ -272,8 +291,22 @@ public partial class MainForm : Form
             return;
         }
 
-        using (var gray = FaceDetector.ToGray(frame))
+        try
+        {
+            using var gray = FaceDetector.ToGray(frame);
             _dataset.SaveSample(_sampleLabel, gray, faces[0].Face);
+        }
+        catch (Exception ex)
+        {
+            _samplesLeft = 0;
+            BeginInvoke(() =>
+            {
+                UpdateButtons();
+                MessageBox.Show("Örnek kaydedilemedi, örnek alma durduruldu.\n" + ex.Message,
+                    "Dosya Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            });
+            return;
+        }
         _lastSampleTime = Environment.TickCount64;
         int left = --_samplesLeft;
 
