@@ -273,7 +273,7 @@ partial class MainForm
         nudEsik.Name = "nudEsik";
         nudEsik.Size = new Size(150, 23);
         nudEsik.TabIndex = 2;
-        nudEsik.Value = new decimal(new int[] { 80, 0, 0, 0 });
+        nudEsik.Value = new decimal(new int[] { 58, 0, 0, 0 });
         nudEsik.ValueChanged += nudEsik_ValueChanged;
         // 
         // lblEsikAciklama

@@ -37,15 +37,19 @@ public sealed class FaceDetector : IDisposable
         return gray;
     }
 
+    /// <summary>Bir adayın yüz sayılması için gereken komşu tespit sayısı. Yüksek değer yanlış algılamayı azaltır.</summary>
+    public const int MinNeighbors = 8;
+
     /// <summary>Gri resimdeki yüzlerin dikdörtgenlerini döndürür. Önce histogram eşitlenir (ışık farkını azaltır).</summary>
     public Rect[] Detect(Mat gray)
     {
         using var equalized = new Mat();
         Cv2.EqualizeHist(gray, equalized);
-        int minSide = Math.Max(40, Math.Min(gray.Width, gray.Height) / 15);
+        // En küçük yüz, resmin kısa kenarının 1/10'u (720p kamerada 72 px); arka plandaki küçük desenler elenir.
+        int minSide = Math.Max(60, Math.Min(gray.Width, gray.Height) / 10);
         lock (_lock)
         {
-            return _cascade.DetectMultiScale(equalized, scaleFactor: 1.1, minNeighbors: 5,
+            return _cascade.DetectMultiScale(equalized, scaleFactor: 1.1, minNeighbors: MinNeighbors,
                 HaarDetectionTypes.ScaleImage, new OpenCvSharp.Size(minSide, minSide));
         }
     }

@@ -35,6 +35,7 @@ public partial class MainForm : Form
     private void MainForm_Load(object sender, EventArgs e)
     {
         cmbKamera.SelectedIndex = 0;
+        nudEsik.Value = (decimal)FaceRecognizerService.DefaultThreshold;
         _camera.FrameReady += Camera_FrameReady;
         _camera.Error += Camera_Error;
         try
@@ -184,8 +185,11 @@ public partial class MainForm : Form
         SetStatus("Model eğitiliyor...");
         try
         {
-            var (samples, labels) = await Task.Run(_recognizer.Train);
-            SetStatus($"Model eğitildi: {labels} etiket, {samples} örnek ({string.Join(", ", _recognizer.Labels)}).");
+            var (perLabel, labels, skipped) = await Task.Run(_recognizer.Train);
+            SetStatus($"Model eğitildi: {string.Join(", ", labels)}; her etiketten {perLabel} örnek (dengeli).");
+            if (skipped.Count > 0)
+                MessageBox.Show($"Şu etiketlerde {FaceRecognizerService.MinSamplesPerLabel}'ten az örnek olduğu için eğitime alınmadı:\n" +
+                    string.Join("\n", skipped), "Eğitim", MessageBoxButtons.OK, MessageBoxIcon.Information);
             RefreshStillImage();
         }
         catch (Exception ex)

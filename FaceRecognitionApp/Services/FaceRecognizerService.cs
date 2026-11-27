@@ -8,8 +8,14 @@ namespace FaceRecognitionApp.Services;
 /// <summary>LBPH algoritmasıyla yüz tanır. dataset/ klasöründen eğitir, modeli model.yml, etiketleri labels.json olarak saklar.</summary>
 public sealed class FaceRecognizerService : IDisposable
 {
-    /// <summary>Varsayılan eşik. LBPH mesafesi bunun üstündeyse yüz "Bilinmiyor" sayılır.</summary>
-    public const double DefaultThreshold = 80;
+    /// <summary>
+    /// Varsayılan eşik. LBPH mesafesi bunun üstündeyse yüz "Bilinmiyor" sayılır.
+    /// Gerçek dataset üzerinde leave-one-out değerlendirmesiyle seçildi (yabancılar en az 58,5 mesafede çıktı).
+    /// </summary>
+    public const double DefaultThreshold = 58;
+
+    /// <summary>Bir etiketin eğitime alınması için gereken en az örnek sayısı.</summary>
+    public const int MinSamplesPerLabel = 5;
 
     private readonly string _datasetDirectory;
     private readonly string _modelPath;
@@ -61,25 +67,41 @@ public sealed class FaceRecognizerService : IDisposable
         return true;
     }
 
-    /// <summary>dataset/&lt;etiket&gt;/*.png dosyalarıyla modeli eğitip kaydeder. Örnek ve etiket sayısını döndürür.</summary>
-    public (int Samples, int Labels) Train()
+    /// <summary>
+    /// dataset/&lt;etiket&gt;/*.png dosyalarıyla modeli eğitip kaydeder.
+    /// Etiketler dengelenir: her etiketten en az örneği olan etiket kadar örnek rastgele seçilir,
+    /// böylece çok örnekli etiket yabancı yüzleri kendine çekmez. MinSamplesPerLabel altındaki etiketler atlanır.
+    /// </summary>
+    public (int SamplesPerLabel, List<string> Labels, List<string> SkippedLabels) Train()
     {
         if (!Directory.Exists(_datasetDirectory))
             throw new InvalidOperationException("Henüz hiç örnek eklenmedi. Önce 'Veri Ekle' bölümünü kullanın.");
+
+        var filesByLabel = Directory.GetDirectories(_datasetDirectory).Order()
+            .Select(directory => (Label: Path.GetFileName(directory), Files: Directory.GetFiles(directory, "*.png")))
+            .Where(x => x.Files.Length > 0)
+            .ToList();
+        var skipped = filesByLabel.Where(x => x.Files.Length < MinSamplesPerLabel)
+            .Select(x => $"{x.Label} ({x.Files.Length} örnek)").ToList();
+        filesByLabel.RemoveAll(x => x.Files.Length < MinSamplesPerLabel);
+
+        if (filesByLabel.Count < 2)
+            throw new InvalidOperationException(
+                $"Eğitim için en az {MinSamplesPerLabel} örneği olan 2 farklı etiket gerekli (şu an {filesByLabel.Count} etiket var).");
+
+        int perLabel = filesByLabel.Min(x => x.Files.Length);
+        var random = new Random(0); // Sabit tohum: aynı veriyle her eğitim aynı örnekleri seçer.
 
         var images = new List<Mat>();
         var ids = new List<int>();
         var labels = new Dictionary<int, string>();
         try
         {
-            foreach (string directory in Directory.GetDirectories(_datasetDirectory).Order())
+            foreach (var (label, files) in filesByLabel)
             {
-                string[] files = Directory.GetFiles(directory, "*.png");
-                if (files.Length == 0) continue;
-
                 int id = labels.Count;
-                labels[id] = Path.GetFileName(directory);
-                foreach (string file in files)
+                labels[id] = label;
+                foreach (string file in files.OrderBy(_ => random.Next()).Take(perLabel))
                 {
                     var image = Cv2.ImDecode(File.ReadAllBytes(file), ImreadModes.Grayscale);
                     if (image.Empty())
@@ -94,9 +116,6 @@ public sealed class FaceRecognizerService : IDisposable
                 }
             }
 
-            if (labels.Count < 2)
-                throw new InvalidOperationException($"Eğitim için en az 2 farklı etiket gerekli (şu an {labels.Count} etiket var).");
-
             var model = LBPHFaceRecognizer.Create();
             try
             {
@@ -110,7 +129,7 @@ public sealed class FaceRecognizerService : IDisposable
                 throw;
             }
             ReplaceModel(model, labels);
-            return (images.Count, labels.Count);
+            return (perLabel, labels.Values.ToList(), skipped);
         }
         finally
         {
