@@ -54,6 +54,24 @@ public partial class MainForm : Form
         UpdateButtons();
     }
 
+    private void btnGoruntuSec_Click(object sender, EventArgs e)
+    {
+        if (ofdGoruntu.ShowDialog(this) != DialogResult.OK) return;
+        try
+        {
+            _camera.Stop();
+            UpdateButtons();
+            using var image = ImageLoader.Load(ofdGoruntu.FileName);
+            ShowImage(image.ToBitmap());
+            SetStatus("Görüntü yüklendi: " + Path.GetFileName(ofdGoruntu.FileName));
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Görüntü açılamadı.");
+            MessageBox.Show("Görüntü açılamadı.\n" + ex.Message, "Dosya Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
     /// <summary>Kamera iş parçacığında çalışır; kareyi Bitmap'e çevirip arayüze gönderir.</summary>
     private void Camera_FrameReady(object? sender, Mat frame)
     {

@@ -35,6 +35,8 @@ partial class MainForm
         cmbKamera = new ComboBox();
         btnKameraBaslat = new Button();
         btnKameraDurdur = new Button();
+        btnGoruntuSec = new Button();
+        ofdGoruntu = new OpenFileDialog();
         ssDurum = new StatusStrip();
         lblDurum = new ToolStripStatusLabel();
         ((System.ComponentModel.ISupportInitialize)picGoruntu).BeginInit();
@@ -71,6 +73,7 @@ partial class MainForm
         grpKamera.Controls.Add(cmbKamera);
         grpKamera.Controls.Add(btnKameraBaslat);
         grpKamera.Controls.Add(btnKameraDurdur);
+        grpKamera.Controls.Add(btnGoruntuSec);
         grpKamera.Location = new Point(8, 8);
         grpKamera.Name = "grpKamera";
         grpKamera.Size = new Size(282, 136);
@@ -116,6 +119,21 @@ partial class MainForm
         btnKameraDurdur.Text = "Kamera Durdur";
         btnKameraDurdur.UseVisualStyleBackColor = true;
         btnKameraDurdur.Click += btnKameraDurdur_Click;
+        //
+        // btnGoruntuSec
+        //
+        btnGoruntuSec.Location = new Point(12, 98);
+        btnGoruntuSec.Name = "btnGoruntuSec";
+        btnGoruntuSec.Size = new Size(258, 28);
+        btnGoruntuSec.TabIndex = 4;
+        btnGoruntuSec.Text = "Görüntü Seç...";
+        btnGoruntuSec.UseVisualStyleBackColor = true;
+        btnGoruntuSec.Click += btnGoruntuSec_Click;
+        //
+        // ofdGoruntu
+        //
+        ofdGoruntu.Filter = "Resim dosyaları|*.jpg;*.jpeg;*.png;*.bmp|Tüm dosyalar|*.*";
+        ofdGoruntu.Title = "Görüntü Seç";
         //
         // ssDurum
         //
@@ -164,6 +182,8 @@ partial class MainForm
     private ComboBox cmbKamera;
     private Button btnKameraBaslat;
     private Button btnKameraDurdur;
+    private Button btnGoruntuSec;
+    private OpenFileDialog ofdGoruntu;
     private StatusStrip ssDurum;
     private ToolStripStatusLabel lblDurum;
 }
